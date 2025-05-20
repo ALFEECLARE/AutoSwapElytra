@@ -18,15 +18,15 @@ public class ClientUtils {
     // 互換性維持
     public static ModFileInfo ipn = null;
 
-    public static int convertSlotIdFromInventoryPair(Pair<InventoryType, Integer> inventoryPair, Inventory inventory) {
-		return convertSlotIdFromInventoryPair(inventoryPair.getFirst(), inventoryPair.getSecond(), inventory);
+    public static int convertSlotIdFromInventoryPair(Pair<InventoryType, Integer> inventoryPair) {
+		return convertSlotIdFromInventoryPair(inventoryPair.getFirst(), inventoryPair.getSecond());
 	}
 	
 	//ホットバー コンテナ:0-8 -> メニュー:36-44
 	//インベントリ コンテナ:9-35 -> メニュー 9-35 ※つまり変更不要
 	//アーマー コンテナ:0-3 -> メニュー 5-8 ただし順番が逆
 	//オフハンド コンテナ 40 -> メニュー 45
-	public static int convertSlotIdFromInventoryPair(InventoryType inventoryType, int inventoryIndex, Inventory inventory) {
+	public static int convertSlotIdFromInventoryPair(InventoryType inventoryType, int inventoryIndex) {
 		return switch (inventoryType) {
 			case InventoryType.OFFHAND   -> InventoryMenu.SHIELD_SLOT;
 			case InventoryType.ARMOR     -> InventoryMenu.ARMOR_SLOT_START+ (InventoryMenu.ARMOR_SLOT_COUNT - 1 - inventoryIndex);

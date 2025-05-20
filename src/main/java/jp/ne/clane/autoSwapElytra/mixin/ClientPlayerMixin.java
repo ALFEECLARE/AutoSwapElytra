@@ -75,7 +75,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
             Pair<InventoryType, Integer> elytraSlotPair = findItemInAllSlot(inventory, ItemSearchType.ELYTRA);
             if (elytraSlotPair == null)
             	return;
-            swapPlayerInventorySlot(this, convertSlotIdFromEquipmentId(EquipmentSlot.CHEST), convertSlotIdFromInventoryPair(elytraSlotPair, inventory));
+            swapPlayerInventorySlot(this, convertSlotIdFromEquipmentId(EquipmentSlot.CHEST), convertSlotIdFromInventoryPair(elytraSlotPair));
             previousSwappedArmor = elytraSlotPair;
             isFlyAfter = true;
             if (AutoSwapElytraConfig.isSwapFireworks) {
@@ -90,7 +90,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
                 if (fireworksSlotPair == null)
                 	return;
                 Pair<InventoryType, Integer> fireworksSwappedHotbarPair = getForeworksSwapTargetSlot(inventory.selected);
-                swapPlayerInventorySlot(this, convertSlotIdFromInventoryPair(fireworksSwappedHotbarPair, inventory), convertSlotIdFromInventoryPair(fireworksSlotPair, inventory));
+                swapPlayerInventorySlot(this, convertSlotIdFromInventoryPair(fireworksSwappedHotbarPair), convertSlotIdFromInventoryPair(fireworksSlotPair));
                 previousSwappedFireworksPair = fireworksSlotPair;
                 previousSwappedHotbarPair = fireworksSwappedHotbarPair;
             }
@@ -101,15 +101,15 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
     private void tryUnequipElytra(CallbackInfo callbackinfo) {
     	Inventory inventory = this.getInventory();
 
-        // 飛行直後でない、降下中、及び既にエリトラを外している(何もなしと鎧装備済みの両方)場合、何もしない
-        if (!isFlyAfter || this.isFallFlying() || !(inventory.armor.get(CHEST_SLOT).getItem() instanceof ElytraItem))
+        // 飛行直後でない、降下中、及び既にエリトラを外している(何もなしと鎧装備済みの両方)、このMod以外の方法でエリトラを外した場合、何もしない
+        if (!isFlyAfter || this.isFallFlying() || !(inventory.armor.get(CHEST_SLOT).getItem() instanceof ElytraItem) || previousSwappedArmor == null)
         	return;
 
         // 交換対象の鎧を選択
         Pair<InventoryType, Integer> armorSlotPair = findItemInAllSlot(inventory, ItemSearchType.CHESTARMOR);
         if (armorSlotPair == null)
         	return;
-        swapPlayerInventorySlot(this, convertSlotIdFromEquipmentId(EquipmentSlot.CHEST), convertSlotIdFromInventoryPair(armorSlotPair, inventory));
+        swapPlayerInventorySlot(this, convertSlotIdFromEquipmentId(EquipmentSlot.CHEST), convertSlotIdFromInventoryPair(armorSlotPair));
         previousSwappedArmor = armorSlotPair;
         isFlyAfter = false;
         if (AutoSwapElytraConfig.isSwapFireworks) {
@@ -118,7 +118,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
         		previousSwappedHotbarPair = null;
         		return;
         	}
-            swapPlayerInventorySlot(this, convertSlotIdFromInventoryPair(previousSwappedHotbarPair, inventory), convertSlotIdFromInventoryPair(previousSwappedFireworksPair, inventory));
+            swapPlayerInventorySlot(this, convertSlotIdFromInventoryPair(previousSwappedHotbarPair), convertSlotIdFromInventoryPair(previousSwappedFireworksPair));
             previousSwappedFireworksPair = null;
             previousSwappedHotbarPair = null;
         }
