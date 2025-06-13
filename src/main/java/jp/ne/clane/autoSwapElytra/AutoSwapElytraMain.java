@@ -6,9 +6,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import jp.ne.clane.autoSwapElytra.commons.ClientUtils;
+import jp.ne.clane.autoSwapElytra.commons.EnchantmentUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ElytraItem;
 import net.minecraft.world.item.FireworkRocketItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
@@ -102,8 +101,8 @@ public class AutoSwapElytraMain {
     
     public static boolean isSearchingItemType(Item item, ItemSearchType type) {
         return switch (item) {
-	        case ArmorItem armor when type == ItemSearchType.CHESTARMOR             -> (armor.getType() == ArmorItem.Type.CHESTPLATE);
-	        case ElytraItem elytra when type == ItemSearchType.ELYTRA               -> true;
+	        case Item armor when type == ItemSearchType.CHESTARMOR                  -> EnchantmentUtils.isChestPlateItem(armor);
+	        case Item armor when type == ItemSearchType.ELYTRA                      -> EnchantmentUtils.isElytraItem(armor);
 	        case FireworkRocketItem fireworks when type == ItemSearchType.FIREWORKS -> true;
 	        default                                                                 -> false;
         };

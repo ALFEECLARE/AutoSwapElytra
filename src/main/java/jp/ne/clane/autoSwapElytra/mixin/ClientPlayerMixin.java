@@ -1,7 +1,5 @@
 package jp.ne.clane.autoSwapElytra.mixin;
 
-import static jp.ne.clane.autoSwapElytra.commons.ClientUtils.*;
-
 import java.util.List;
 
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,22 +21,19 @@ import jp.ne.clane.autoSwapElytra.commons.EnchantmentUtils;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.Holder;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterial;
-import net.minecraft.world.item.ArmorMaterials;
-import net.minecraft.world.item.ElytraItem;
-import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.FireworkRocketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.equipment.EquipmentModels;
 import net.minecraft.world.level.Level;
 
 @Mixin(value = LocalPlayer.class)
@@ -62,20 +57,20 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
         return !this.onGround() && !this.isFallFlying() && !this.isInWater() && !this.hasEffect(MobEffects.LEVITATION);
     }
 
-    @Inject(method = "aiStep", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client/player/LocalPlayer;getItemBySlot(Lnet/minecraft/world/entity/EquipmentSlot;)Lnet/minecraft/world/item/ItemStack;"))
+    @Inject(method = "aiStep", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client/player/LocalPlayer;tryToStartFallFlying()Z"))
     private void tryEquipElytra(CallbackInfo callbackinfo) {
         if (isFlightStarttable()) {
             Inventory inventory = this.getInventory();
 
             // エリトラ装備済みなら何もしない
-            if (isFlyAfter || inventory.armor.get(CHEST_SLOT).getItem() instanceof ElytraItem)
+            if (isFlyAfter || EnchantmentUtils.isElytraItem(inventory.armor.get(CHEST_SLOT).getItem()))
             	return;
 
             // 交換対象のエリトラを選択
             Pair<InventoryType, Integer> elytraSlotPair = findItemInAllSlot(inventory, ItemSearchType.ELYTRA);
             if (elytraSlotPair == null)
             	return;
-            swapPlayerInventorySlot(this, convertSlotIdFromEquipmentId(EquipmentSlot.CHEST), convertSlotIdFromInventoryPair(elytraSlotPair));
+            ClientUtils.swapPlayerInventorySlot(this, ClientUtils.convertSlotIdFromEquipmentId(EquipmentSlot.CHEST), ClientUtils.convertSlotIdFromInventoryPair(elytraSlotPair));
             previousSwappedArmor = elytraSlotPair;
             isFlyAfter = true;
             if (AutoSwapElytraConfig.isSwapFireworks) {
@@ -90,26 +85,27 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
                 if (fireworksSlotPair == null)
                 	return;
                 Pair<InventoryType, Integer> fireworksSwappedHotbarPair = getForeworksSwapTargetSlot(inventory.selected);
-                swapPlayerInventorySlot(this, convertSlotIdFromInventoryPair(fireworksSwappedHotbarPair), convertSlotIdFromInventoryPair(fireworksSlotPair));
+                ClientUtils.swapPlayerInventorySlot(this, ClientUtils.convertSlotIdFromInventoryPair(fireworksSwappedHotbarPair), ClientUtils.convertSlotIdFromInventoryPair(fireworksSlotPair));
                 previousSwappedFireworksPair = fireworksSlotPair;
                 previousSwappedHotbarPair = fireworksSwappedHotbarPair;
             }
         }
     }
+    
 
     @Inject(method = "aiStep", at = @At(value = "TAIL"))
     private void tryUnequipElytra(CallbackInfo callbackinfo) {
     	Inventory inventory = this.getInventory();
 
         // 飛行直後でない、降下中、及び既にエリトラを外している(何もなしと鎧装備済みの両方)、このMod以外の方法でエリトラを外した場合、何もしない
-        if (!isFlyAfter || this.isFallFlying() || !(inventory.armor.get(CHEST_SLOT).getItem() instanceof ElytraItem) || previousSwappedArmor == null)
+        if (!isFlyAfter || this.isFallFlying() || !EnchantmentUtils.isElytraItem(inventory.armor.get(CHEST_SLOT).getItem()) || previousSwappedArmor == null)
         	return;
 
         // 交換対象の鎧を選択
         Pair<InventoryType, Integer> armorSlotPair = findItemInAllSlot(inventory, ItemSearchType.CHESTARMOR);
         if (armorSlotPair == null)
         	return;
-        swapPlayerInventorySlot(this, convertSlotIdFromEquipmentId(EquipmentSlot.CHEST), convertSlotIdFromInventoryPair(armorSlotPair));
+        ClientUtils.swapPlayerInventorySlot(this, ClientUtils.convertSlotIdFromEquipmentId(EquipmentSlot.CHEST), ClientUtils.convertSlotIdFromInventoryPair(armorSlotPair));
         previousSwappedArmor = armorSlotPair;
         isFlyAfter = false;
         if (AutoSwapElytraConfig.isSwapFireworks) {
@@ -118,7 +114,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
         		previousSwappedHotbarPair = null;
         		return;
         	}
-            swapPlayerInventorySlot(this, convertSlotIdFromInventoryPair(previousSwappedHotbarPair), convertSlotIdFromInventoryPair(previousSwappedFireworksPair));
+        	ClientUtils.swapPlayerInventorySlot(this, ClientUtils.convertSlotIdFromInventoryPair(previousSwappedHotbarPair), ClientUtils.convertSlotIdFromInventoryPair(previousSwappedFireworksPair));
             previousSwappedFireworksPair = null;
             previousSwappedHotbarPair = null;
         }
@@ -153,9 +149,9 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
 	            Item item = stack.getItem();
 	            if (!AutoSwapElytraMain.isSearchingItemType(item, type))
 	            	continue;
-	            if (item instanceof ArmorItem armor && !AutoSwapElytraConfig.ignoreArmorTier)
-	            	currentScore += getArmorMaterialPoint(inventory, armor.getMaterial());
-	            if (item instanceof Equipable) {
+	            if (item.components().has(DataComponents.EQUIPPABLE) && !AutoSwapElytraConfig.ignoreArmorTier)
+	            	currentScore += getArmorMaterialPoint(inventory, EnchantmentUtils.getMaterial(item));
+	            if (item.components().has(DataComponents.EQUIPPABLE)) {
 		            currentScore += EnchantmentUtils.getEnchantmentLevel(clientLevel, stack, Enchantments.MENDING) * 500;
 		            currentScore += EnchantmentUtils.getEnchantmentLevel(clientLevel, stack, Enchantments.UNBREAKING) * 50;
 		            currentScore += EnchantmentUtils.getEnchantmentLevel(clientLevel, stack, Enchantments.PROTECTION) * 100;
@@ -191,20 +187,20 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
     	return answer;
     }
 
-	private int getArmorMaterialPoint(Inventory inventory, Holder<ArmorMaterial> material) {
-		if (material == ArmorMaterials.NETHERITE) { return 3000; } else
-		if (material == ArmorMaterials.DIAMOND)   { return 2000; } else
-		if (material == ArmorMaterials.GOLD)      {
+	private int getArmorMaterialPoint(Inventory inventory, ResourceLocation material) {
+		if (material == EquipmentModels.NETHERITE) { return 3000; } else
+		if (material == EquipmentModels.DIAMOND)   { return 2000; } else
+		if (material == EquipmentModels.GOLD)      {
 				if (this.clientLevel.dimension() == Level.NETHER && isWearNoGoldArmor(inventory)) {
 					return 3000;
 				} else {
 					return 0;
 				}
 		} else
-		if (material == ArmorMaterials.IRON)      { return 1000; } else 
-		if (material == ArmorMaterials.CHAIN)     { return 500;  } else 
-		if (material == ArmorMaterials.LEATHER)   { return 0;  } 
-		else                                      { return 2500; } //mod素材
+		if (material == EquipmentModels.IRON)      { return 1000; } else 
+		if (material == EquipmentModels.CHAINMAIL) { return 500;  } else 
+		if (material == EquipmentModels.LEATHER)   { return 0;  } 
+		else                                       { return 2500; } //mod素材
 	}
 	
 	private final boolean isWearNoGoldArmor(Inventory inventory) {
@@ -212,7 +208,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
 			Item item = inventory.armor.get(armorSlot.getIndex()).getItem(); 
 			if (!(item instanceof ArmorItem))
 				continue;
-			if (((ArmorItem)item).getMaterial() == ArmorMaterials.GOLD)
+			if (EnchantmentUtils.getMaterial(item) == EquipmentModels.GOLD)
 				return false;
 		}
 		return true;
