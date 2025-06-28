@@ -5,11 +5,11 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.equipment.ArmorType;
+import net.minecraft.world.item.equipment.EquipmentAsset;
 
 public class EnchantmentUtils {
 	public static int getEnchantmentLevel(ClientLevel clientLevel, ItemStack itemStack, ResourceKey<Enchantment> enchant) {
@@ -34,7 +34,7 @@ public class EnchantmentUtils {
     	return itemComponents.get(DataComponents.EQUIPPABLE).slot().getId() == ArmorType.CHESTPLATE.getSlot().getId() && !(itemComponents.has(DataComponents.GLIDER));
 	}
 	
-	public static ResourceLocation getMaterial(Item item) {
-    	return item.components().get(DataComponents.EQUIPPABLE).model().get();
+	public static ResourceKey<EquipmentAsset> getMaterial(Item item) {
+    	return item.components().get(DataComponents.EQUIPPABLE).assetId().get();
 	}
 }

@@ -23,7 +23,7 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
@@ -33,7 +33,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.Fireworks;
 import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.item.equipment.EquipmentModels;
+import net.minecraft.world.item.equipment.EquipmentAsset;
+import net.minecraft.world.item.equipment.EquipmentAssets;
 import net.minecraft.world.level.Level;
 
 @Mixin(value = LocalPlayer.class)
@@ -187,19 +188,19 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
     	return answer;
     }
 
-	private int getArmorMaterialPoint(Inventory inventory, ResourceLocation material) {
-		if (material == EquipmentModels.NETHERITE) { return 3000; } else
-		if (material == EquipmentModels.DIAMOND)   { return 2000; } else
-		if (material == EquipmentModels.GOLD)      {
+	private int getArmorMaterialPoint(Inventory inventory, ResourceKey<EquipmentAsset> material) {
+		if (material == EquipmentAssets.NETHERITE) { return 3000; } else
+		if (material == EquipmentAssets.DIAMOND)   { return 2000; } else
+		if (material == EquipmentAssets.GOLD)      {
 				if (this.clientLevel.dimension() == Level.NETHER && isWearNoGoldArmor(inventory)) {
 					return 3000;
 				} else {
 					return 0;
 				}
 		} else
-		if (material == EquipmentModels.IRON)      { return 1000; } else 
-		if (material == EquipmentModels.CHAINMAIL) { return 500;  } else 
-		if (material == EquipmentModels.LEATHER)   { return 0;  } 
+		if (material == EquipmentAssets.IRON)      { return 1000; } else 
+		if (material == EquipmentAssets.CHAINMAIL) { return 500;  } else 
+		if (material == EquipmentAssets.LEATHER)   { return 0;  } 
 		else                                       { return 2500; } //mod素材
 	}
 	
@@ -208,7 +209,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
 			Item item = inventory.armor.get(armorSlot.getIndex()).getItem(); 
 			if (!(item instanceof ArmorItem))
 				continue;
-			if (EnchantmentUtils.getMaterial(item) == EquipmentModels.GOLD)
+			if (EnchantmentUtils.getMaterial(item) == EquipmentAssets.GOLD)
 				return false;
 		}
 		return true;
