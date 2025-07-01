@@ -69,9 +69,15 @@ public class ClientUtils {
 
     public static final NonNullList<ItemStack> getInventoryFromInventoryType(InventoryType inventoryType, Inventory inventory) {
 		return switch (inventoryType) {
-			case InventoryType.OFFHAND -> inventory.offhand;
-			case InventoryType.ARMOR   -> inventory.armor;
-			case InventoryType.INVENTORY -> inventory.items;
+			case InventoryType.OFFHAND -> NonNullList.of(ItemStack.EMPTY, inventory.equipment.get(EquipmentSlot.OFFHAND));
+			case InventoryType.ARMOR   -> NonNullList.of(
+					ItemStack.EMPTY,
+					inventory.equipment.get(EquipmentSlot.FEET),
+					inventory.equipment.get(EquipmentSlot.LEGS),
+					inventory.equipment.get(EquipmentSlot.CHEST),
+					inventory.equipment.get(EquipmentSlot.HEAD)
+				);
+			case InventoryType.INVENTORY -> inventory.getNonEquipmentItems();
 		};
 	}
 

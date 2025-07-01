@@ -27,7 +27,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.FireworkRocketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -39,7 +38,11 @@ import net.minecraft.world.level.Level;
 
 @Mixin(value = LocalPlayer.class)
 public class ClientPlayerMixin extends AbstractClientPlayer {
+	private static final int HEAD_SLOT = EquipmentSlot.HEAD.getIndex();
 	private static final int CHEST_SLOT = EquipmentSlot.CHEST.getIndex();
+	private static final int LEGS_SLOT = EquipmentSlot.LEGS.getIndex();
+	private static final int FEET_SLOT = EquipmentSlot.FEET.getIndex();
+	private static final int OFFHAND = EquipmentSlot.OFFHAND.getIndex();
 	private Pair<InventoryType,Integer> previousSwappedArmor = null;
 	private Pair<InventoryType,Integer> previousSwappedFireworksPair = null;
 	private Pair<InventoryType,Integer> previousSwappedHotbarPair = null;
@@ -64,7 +67,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
             Inventory inventory = this.getInventory();
 
             // エリトラ装備済みなら何もしない
-            if (isFlyAfter || EnchantmentUtils.isElytraItem(inventory.armor.get(CHEST_SLOT).getItem()))
+            if (isFlyAfter || EnchantmentUtils.isElytraItem(inventory.getItem(CHEST_SLOT).getItem()))
             	return;
 
             // 交換対象のエリトラを選択
@@ -76,7 +79,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
             isFlyAfter = true;
             if (AutoSwapElytraConfig.isSwapFireworks) {
             	// メインハンドかオフハンドに花火を持っているなら前回履歴をクリアして終了
-            	if (inventory.getSelected().getItem() instanceof FireworkRocketItem || inventory.offhand.getFirst().getItem() instanceof FireworkRocketItem) {
+            	if (inventory.getSelectedItem().getItem() instanceof FireworkRocketItem || ClientUtils.getInventoryFromInventoryType(InventoryType.OFFHAND, inventory).getFirst().getItem() instanceof FireworkRocketItem) {
             		previousSwappedFireworksPair = null;
             		previousSwappedHotbarPair = null;
 					return;
@@ -85,7 +88,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
                 Pair<InventoryType, Integer> fireworksSlotPair = findItemInAllSlot(inventory, ItemSearchType.FIREWORKS);
                 if (fireworksSlotPair == null)
                 	return;
-                Pair<InventoryType, Integer> fireworksSwappedHotbarPair = getForeworksSwapTargetSlot(inventory.selected);
+                Pair<InventoryType, Integer> fireworksSwappedHotbarPair = getForeworksSwapTargetSlot(inventory.getSelectedSlot());
                 ClientUtils.swapPlayerInventorySlot(this, ClientUtils.convertSlotIdFromInventoryPair(fireworksSwappedHotbarPair), ClientUtils.convertSlotIdFromInventoryPair(fireworksSlotPair));
                 previousSwappedFireworksPair = fireworksSlotPair;
                 previousSwappedHotbarPair = fireworksSwappedHotbarPair;
@@ -99,7 +102,7 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
     	Inventory inventory = this.getInventory();
 
         // 飛行直後でない、降下中、及び既にエリトラを外している(何もなしと鎧装備済みの両方)、このMod以外の方法でエリトラを外した場合、何もしない
-        if (!isFlyAfter || this.isFallFlying() || !EnchantmentUtils.isElytraItem(inventory.armor.get(CHEST_SLOT).getItem()) || previousSwappedArmor == null)
+        if (!isFlyAfter || this.isFallFlying() || !EnchantmentUtils.isElytraItem(ClientUtils.getInventoryFromInventoryType(InventoryType.ARMOR, inventory).get(CHEST_SLOT).getItem()) || previousSwappedArmor == null)
         	return;
 
         // 交換対象の鎧を選択
@@ -132,12 +135,12 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
 					return previousSwappedArmor;
 				break;
 			case SwapMode.OFFHAND:
-				ItemStack offhandItem = inventory.offhand.getFirst();
+				ItemStack offhandItem = ClientUtils.getInventoryFromInventoryType(InventoryType.OFFHAND, inventory).getFirst();
 				if (offhandItem != ItemStack.EMPTY && AutoSwapElytraMain.isSearchingItemType(offhandItem.getItem(), type))
 					return new Pair<InventoryType, Integer>(InventoryType.OFFHAND,0);
 				break;
 			case SwapMode.SLOT:
-				ItemStack slotItem = inventory.items.get(AutoSwapElytraConfig.swapSlot);
+				ItemStack slotItem = ClientUtils.getInventoryFromInventoryType(InventoryType.INVENTORY, inventory).get(AutoSwapElytraConfig.swapSlot);
 				if (slotItem != ItemStack.EMPTY && AutoSwapElytraMain.isSearchingItemType(slotItem.getItem(), type))
 					return new Pair<InventoryType, Integer>(InventoryType.INVENTORY,AutoSwapElytraConfig.swapSlot);
 				break;
@@ -206,8 +209,8 @@ public class ClientPlayerMixin extends AbstractClientPlayer {
 	
 	private final boolean isWearNoGoldArmor(Inventory inventory) {
 		for (EquipmentSlot armorSlot : EquipmentSlot.values()) {
-			Item item = inventory.armor.get(armorSlot.getIndex()).getItem(); 
-			if (!(item instanceof ArmorItem))
+			Item item = ClientUtils.getInventoryFromInventoryType(InventoryType.ARMOR, inventory).get(armorSlot.getIndex()).getItem(); 
+			if (!(item.components().has(DataComponents.EQUIPPABLE)))
 				continue;
 			if (EnchantmentUtils.getMaterial(item) == EquipmentAssets.GOLD)
 				return false;
